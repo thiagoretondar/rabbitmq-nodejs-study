@@ -1,6 +1,8 @@
 const amqp = require('amqplib');
 
 const exchangeName = 'my-delay-exchange';
+const pattern = 'jobs';
+const queueName = 'messages';
 
 amqp.connect('amqp:localhost')
     .then((connection) => {
@@ -11,11 +13,13 @@ amqp.connect('amqp:localhost')
     .then((channel) => {
         console.log('Canal criado');
 
-        channel.prefetch(5);
-        channel.consume('messages', (message) => {
-            console.log('%s - Received %s messages: %s', new Date(), message.content.toString());
-            console.log('=================================================================');
+        channel.prefetch(10);
+        channel.consume(queueName, (message) => {
+            // if (message.content.toString().includes('MESSAGE DELAYED')) {
+                console.log('%s - Received messages: %s', new Date(), message.content.toString());
+                console.log('=================================================================');
+            // }
             // everything is ok with the message
             channel.ack(message);
-        });
+        }, { noAck: false });
     });
