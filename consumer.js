@@ -4,7 +4,20 @@ const exchangeName = 'my-delay-exchange';
 const pattern = 'jobs';
 const queueName = 'messages';
 
-amqp.connect('amqp:localhost')
+function wait(t) {
+    return new Promise(function(resolve) {
+        setTimeout(resolve, t)
+    });
+ }
+
+let i = 0;
+const connection = {
+    protocol: 'amqp',
+    hostname: 'localhost',
+    port: 5672,
+};
+
+amqp.connect(connection)
     .then((connection) => {
         console.log('Connected!');
 
@@ -13,13 +26,21 @@ amqp.connect('amqp:localhost')
     .then((channel) => {
         console.log('Canal criado');
 
-        channel.prefetch(10);
+        const queueOptions = {
+            exclusive: false,
+            durable: true,
+            autoDelete: false,
+        };
+
+        const queueAssertion = channel.assertQueue(queueName, queueOptions);
+
+        channel.prefetch(30);
         channel.consume(queueName, (message) => {
             // if (message.content.toString().includes('MESSAGE DELAYED')) {
-                console.log('%s - Received messages: %s', new Date(), message.content.toString());
+                console.log('%s - Received messages: %s', ++i, message.content.toString());
                 console.log('=================================================================');
             // }
             // everything is ok with the message
-            channel.ack(message);
-        }, { noAck: false });
+            channel.ack(message)
+        }, { noAck: false, exclusive: false });
     });
